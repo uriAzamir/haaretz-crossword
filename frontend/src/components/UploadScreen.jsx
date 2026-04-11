@@ -9,8 +9,8 @@ export default function UploadScreen({ onPuzzleLoaded }) {
   const inputRef = useRef(null);
 
   async function processFile(file) {
-    if (!file || !file.type.startsWith("image/")) {
-      setError("יש לבחור קובץ תמונה (PNG / JPG)");
+    if (!file || (!file.type.startsWith("image/") && file.type !== "application/pdf")) {
+      setError("יש לבחור קובץ תמונה (PNG / JPG) או PDF");
       return;
     }
     setError(null);
@@ -31,7 +31,9 @@ export default function UploadScreen({ onPuzzleLoaded }) {
       }
 
       const gridData = await res.json();
-      const imageUrl = URL.createObjectURL(file);
+      // PDFs can't be shown in <img> — backend returns the rendered PNG as base64
+      const imageUrl = gridData.image_base64 ?? URL.createObjectURL(file);
+      delete gridData.image_base64;
       onPuzzleLoaded(imageUrl, gridData);
     } catch (err) {
       setError(err.message || "אירעה שגיאה בעיבוד התמונה");
@@ -67,8 +69,8 @@ export default function UploadScreen({ onPuzzleLoaded }) {
         ) : (
           <>
             <p style={styles.uploadIcon}>📷</p>
-            <p style={styles.hint}>לחץ כאן להעלאת צילום מסך של התשחץ</p>
-            <p style={styles.hintSmall}>או גרור תמונה לכאן</p>
+            <p style={styles.hint}>לחץ כאן להעלאת תשחץ (PDF או תמונה)</p>
+            <p style={styles.hintSmall}>או גרור קובץ לכאן</p>
           </>
         )}
       </div>
@@ -76,7 +78,7 @@ export default function UploadScreen({ onPuzzleLoaded }) {
       <input
         ref={inputRef}
         type="file"
-        accept="image/*"
+        accept="image/*,.pdf,application/pdf"
         style={{ display: "none" }}
         onChange={handleFileChange}
       />

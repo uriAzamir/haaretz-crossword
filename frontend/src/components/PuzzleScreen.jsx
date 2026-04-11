@@ -5,7 +5,7 @@ import { usePuzzleState } from "../hooks/usePuzzleState";
 export default function PuzzleScreen({ imageUrl, gridData, onReset }) {
   const imgRef = useRef(null);
   const [imgSize, setImgSize] = useState(null); // { rendered: {w,h}, natural: {w,h} }
-  const { answers, activeCell, setActiveCell, handleKey } = usePuzzleState(gridData);
+  const { answers, activeCell, direction, handleCellClick, handleKey } = usePuzzleState(gridData);
 
   // Recalculate rendered size on load and resize
   function updateSize() {
@@ -53,7 +53,8 @@ export default function PuzzleScreen({ imageUrl, gridData, onReset }) {
               imgSize={imgSize}
               answers={answers}
               activeCell={activeCell}
-              onCellClick={setActiveCell}
+              direction={direction}
+              onCellClick={handleCellClick}
               onKey={handleKey}
             />
           )}

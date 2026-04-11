@@ -3,6 +3,8 @@ Flask API for the Haaretz crossword solver.
 """
 
 import os
+import base64
+import fitz  # PyMuPDF
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from grid_detector import analyze_image
@@ -20,6 +22,15 @@ def health():
     return jsonify({"status": "ok"})
 
 
+def pdf_to_image_bytes(pdf_bytes, dpi=250):
+    """Render the first page of a PDF to PNG bytes."""
+    doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+    page = doc[0]
+    mat = fitz.Matrix(dpi / 72, dpi / 72)
+    pix = page.get_pixmap(matrix=mat, colorspace=fitz.csRGB)
+    return pix.tobytes("png")
+
+
 @app.post("/api/analyze")
 def analyze():
     if "image" not in request.files:
@@ -29,14 +40,29 @@ def analyze():
     if not file.filename:
         return jsonify({"error": "Empty filename"}), 400
 
-    img_bytes = file.read()
-    if len(img_bytes) == 0:
+    raw = file.read()
+    if len(raw) == 0:
         return jsonify({"error": "Empty file"}), 400
+
+    # Convert PDF → image if needed
+    is_pdf = file.filename.lower().endswith(".pdf") or raw[:4] == b"%PDF"
+    if is_pdf:
+        try:
+            img_bytes = pdf_to_image_bytes(raw)
+        except Exception as exc:
+            return jsonify({"error": f"Could not read PDF: {exc}"}), 422
+    else:
+        img_bytes = raw
 
     try:
         result = analyze_image(img_bytes)
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 422
+
+    # For PDFs the browser can't display the original file as <img>,
+    # so include the rendered PNG as base64 for the frontend to use directly.
+    if is_pdf:
+        result["image_base64"] = "data:image/png;base64," + base64.b64encode(img_bytes).decode()
 
     return jsonify(result)
 

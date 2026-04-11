@@ -1,6 +1,6 @@
 import { useRef, useEffect } from "react";
 
-export default function PuzzleCell({ cell, isActive, answer, inputRef, onClick, onKey }) {
+export default function PuzzleCell({ cell, isActive, direction, answer, inputRef, onClick, onKey }) {
   const localRef = useRef(null);
 
   // Expose focus ref to parent
@@ -29,12 +29,15 @@ export default function PuzzleCell({ cell, isActive, answer, inputRef, onClick, 
     }
   }
 
+  const activeStyle = isActive
+    ? direction === "across"
+      ? styles.answerActiveAcross
+      : styles.answerActiveDown
+    : {};
+
   return (
     <div
-      style={{
-        ...styles.answer,
-        ...(isActive ? styles.answerActive : {}),
-      }}
+      style={{ ...styles.answer, ...activeStyle }}
       onClick={onClick}
     >
       {/* Invisible input captures keyboard */}
@@ -76,10 +79,20 @@ const styles = {
     // Touch target: full cell
     WebkitTapHighlightColor: "transparent",
   },
-  answerActive: {
+  // Across (RTL): yellow, entry bar on the RIGHT
+  answerActiveAcross: {
     background: "rgba(255, 220, 0, 0.25)",
     outline: "2px solid rgba(255,220,0,0.9)",
     outlineOffset: "-2px",
+    borderRight: "3px solid rgba(255,160,0,1)",
+    zIndex: 1,
+  },
+  // Down: blue, entry bar on TOP
+  answerActiveDown: {
+    background: "rgba(100, 200, 255, 0.25)",
+    outline: "2px solid rgba(100,200,255,0.9)",
+    outlineOffset: "-2px",
+    borderTop: "3px solid rgba(60,180,255,1)",
     zIndex: 1,
   },
   hiddenInput: {

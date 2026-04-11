@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import PuzzleCell from "./PuzzleCell";
 
-export default function GridOverlay({ gridData, imgSize, answers, activeCell, onCellClick, onKey }) {
+export default function GridOverlay({ gridData, imgSize, answers, activeCell, direction, onCellClick, onKey }) {
   const { rows, cols, bbox, cells } = gridData;
   const { rendered, natural } = imgSize;
 
@@ -18,8 +18,9 @@ export default function GridOverlay({ gridData, imgSize, answers, activeCell, on
     display: "grid",
     gridTemplateColumns: `repeat(${cols}, 1fr)`,
     gridTemplateRows:    `repeat(${rows}, 1fr)`,
-    // RTL: columns flow right-to-left naturally
-    direction: "rtl",
+    // Use LTR so col 0 maps to the leftmost pixel column in the image.
+    // The backend numbers columns left-to-right from the PNG.
+    direction: "ltr",
   };
 
   // Build a lookup for fast access
@@ -50,10 +51,11 @@ export default function GridOverlay({ gridData, imgSize, answers, activeCell, on
               key={`${r},${c}`}
               cell={cell}
               isActive={isActive}
+              direction={direction}
               answer={answer}
               inputRef={isActive ? activeInputRef : null}
               onClick={() => {
-                if (cell.type === "answer") onCellClick({ row: r, col: c });
+                if (cell.type === "answer") onCellClick(r, c);
               }}
               onKey={onKey}
             />
