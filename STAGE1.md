@@ -4,43 +4,42 @@
 
 ### Step 0 — OpenCV proof-of-concept
 - `test_step0.py`: standalone script that loads a PNG, detects the grid, classifies
-  each cell as CLUE (light blue) or ANSWER (white), and saves an annotated result image.
+  each cell as CLUE (light blue) or ANSWER (white), saves an annotated result image.
 - Key finding: two grid lines were missing from projection peaks due to thin/broken
   lines in the image. Fixed with a gap-fill algorithm: if any inter-line spacing exceeds
   1.5× the median, insert interpolated line(s) at the expected position.
-- Result: 21 rows × 16 cols detected correctly, 18.8% clue ratio.
+- Result: 21 rows × 16 cols detected correctly on PNG sample; 22 × 16 on PDF.
 
 ### Backend (Python/Flask)
 - `backend/app.py`: two endpoints — `GET /api/health`, `POST /api/analyze`
-- `backend/grid_detector.py`: full OpenCV pipeline (same logic as test_step0.py)
-  returning rows, cols, bbox, and per-cell type classification as JSON
-- `backend/requirements.txt`: flask, flask-cors, opencv-python-headless, numpy, gunicorn
-- `backend/Procfile`: `web: gunicorn app:app` for Render
+- **PDF support**: PyMuPDF renders page 0 at 250 DPI to PNG before passing to OpenCV.
+  For PDF uploads, the rendered PNG is returned as base64 in the response so the
+  frontend can display it (browsers can't show PDFs in `<img>` tags).
+- `backend/grid_detector.py`: full OpenCV pipeline — binary threshold → morphological
+  line detection → projection peaks → gap-fill → HSV color classification
+- `backend/requirements.txt`: flask, flask-cors, opencv-python-headless, numpy,
+  gunicorn, PyMuPDF
 
 ### Frontend (React + Vite)
-- `UploadScreen.jsx`: drag-drop / file picker, calls `/api/analyze`, shows loading state
-- `PuzzleScreen.jsx`: image displayed in scrollable container with overlay positioned on top
-- `GridOverlay.jsx`: CSS grid positioned exactly over the puzzle image using bbox percentages
-- `PuzzleCell.jsx`: answer cells have a hidden `<input>` for keyboard capture; single
-  Hebrew letter per cell; active cell highlighted in yellow; auto-advance to next answer cell
-- `usePuzzleState.js`: manages answers Map, activeCell, localStorage persistence,
-  backspace (clear current or move to previous), auto-advance on character input
-- `index.html`: `lang="he" dir="rtl"`, no zoom (`user-scalable=no`)
-- `vercel.json`: SPA rewrite rule
+- **UploadScreen**: accepts PDF or image files; calls `/api/analyze`
+- **PuzzleScreen**: scrollable container with image and absolutely-positioned overlay
+- **GridOverlay**: CSS grid (`direction: ltr`) aligned to image via bbox scaling
+- **PuzzleCell**: answer cells have hidden `<input>` for keyboard capture;
+  clue cells are transparent and non-interactive
+- **Direction toggle**: tap a cell once to activate (across/yellow);
+  tap same cell again to switch to down mode (blue). Visual indicator shows current direction.
+- **Auto-advance**: across = right-to-left (Hebrew RTL); down = top-to-bottom
+- **Backspace**: clears current cell or moves to previous cell in direction
+- **usePuzzleState**: manages answers, activeCell, direction; persists to localStorage
 
-## How to test locally
-
-1. Start backend: `cd backend && py -m flask --app app run`
-2. Start frontend: `cd frontend && npm run dev`
-3. Open `http://localhost:5173`
-4. Upload `crossword_sample.png`
-5. Verify grid overlay aligns with the puzzle image
-6. Tap a white cell, type Hebrew letters
-7. Reload page — answers should be restored from localStorage
+### Deployment
+- Backend: https://haaretz-crossword.onrender.com (Render, free tier)
+- Frontend: https://haaretz-crossword.vercel.app (Vercel)
 
 ## Known constraints / future work
 
-- Grid detection assumes consistent light-blue clue cells and white answer cells
-- Images with heavy JPEG compression or unusual color shifts may need threshold tuning
-- No zoom/pan gesture on the puzzle image yet (scrollable but not pinch-zoom)
+- Render free tier spins down after inactivity (~30s cold start)
+- No pinch-to-zoom on the puzzle image
+- Direction toggle (across/down) behavior on iPhone keyboard not fully validated
 - No completion detection or celebratory state
+- Grid detection assumes consistent light-blue clue cells; heavy compression may affect accuracy
