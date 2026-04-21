@@ -19,12 +19,21 @@ export default function GridOverlay({ gridData, imgSize, answers, activeCell, di
     ? row_lines.slice(0, -1).map((y, i) => `${(row_lines[i + 1] - y) * scaleY}px`).join(" ")
     : `repeat(${rows}, 1fr)`;
 
+  const overlayLeft   = col_lines?.length ? col_lines[0] * scaleX : bbox.x * scaleX;
+  const overlayTop    = row_lines?.length ? row_lines[0] * scaleY : bbox.y * scaleY;
+  const overlayWidth  = col_lines?.length
+    ? (col_lines[col_lines.length - 1] - col_lines[0]) * scaleX
+    : bbox.width * scaleX;
+  const overlayHeight = row_lines?.length
+    ? (row_lines[row_lines.length - 1] - row_lines[0]) * scaleY
+    : bbox.height * scaleY;
+
   const overlayStyle = {
     position: "absolute",
-    left:   col_lines ? col_lines[0] * scaleX : bbox.x * scaleX,
-    top:    row_lines ? row_lines[0] * scaleY : bbox.y * scaleY,
-    width:  bbox.width  * scaleX,
-    height: bbox.height * scaleY,
+    left:   overlayLeft,
+    top:    overlayTop,
+    width:  overlayWidth,
+    height: overlayHeight,
     display: "grid",
     gridTemplateColumns,
     gridTemplateRows,

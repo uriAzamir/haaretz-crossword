@@ -131,6 +131,10 @@ def analyze_image(img_bytes: bytes) -> dict:
     row_lines = fill_missing_lines(row_lines)
     col_lines = fill_missing_lines(col_lines)
 
+    # Clip any lines that crept in outside the bbox due to the MARGIN extension
+    row_lines = [r for r in row_lines if top - MARGIN <= r <= bottom + MARGIN]
+    col_lines = [c for c in col_lines if left - MARGIN <= c <= right + MARGIN]
+
     n_rows = len(row_lines) - 1
     n_cols = len(col_lines) - 1
 
