@@ -70,6 +70,11 @@ export default function GridOverlay({ gridData, imgSize, answers, activeCell, di
   useEffect(() => {
     if (activeCell && activeInputRef.current) {
       activeInputRef.current.focus({ preventScroll: true });
+      activeInputRef.current.parentElement?.scrollIntoView({
+        block: "nearest",
+        inline: "nearest",
+        behavior: "smooth",
+      });
     }
   }, [activeCell]);
 
