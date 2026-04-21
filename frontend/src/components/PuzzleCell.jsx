@@ -1,6 +1,6 @@
 import { useRef, useEffect } from "react";
 
-export default function PuzzleCell({ cell, isActive, direction, answer, inputRef, onClick, onKey }) {
+export default function PuzzleCell({ cell, isActive, isInWord, answer, inputRef, onClick, onKey }) {
   const localRef = useRef(null);
 
   // Expose focus ref to parent
@@ -29,15 +29,12 @@ export default function PuzzleCell({ cell, isActive, direction, answer, inputRef
     }
   }
 
-  const activeStyle = isActive
-    ? direction === "across"
-      ? styles.answerActiveAcross
-      : styles.answerActiveDown
-    : {};
+  const wordStyle = isInWord ? styles.answerInWord : {};
+  const activeStyle = isActive ? styles.answerActive : {};
 
   return (
     <div
-      style={{ ...styles.answer, ...activeStyle }}
+      style={{ ...styles.answer, ...wordStyle, ...activeStyle }}
       onClick={onClick}
     >
       {/* Invisible input captures keyboard */}
@@ -79,21 +76,14 @@ const styles = {
     // Touch target: full cell
     WebkitTapHighlightColor: "transparent",
   },
-  // Across (RTL): yellow, entry bar on the RIGHT
-  answerActiveAcross: {
-    background: "rgba(255, 220, 0, 0.25)",
-    outline: "2px solid rgba(255,220,0,0.9)",
-    outlineOffset: "-2px",
-    borderRight: "3px solid rgba(255,160,0,1)",
+  answerInWord: {
+    background: "rgba(160, 160, 160, 0.35)",
     zIndex: 1,
   },
-  // Down: blue, entry bar on TOP
-  answerActiveDown: {
-    background: "rgba(100, 200, 255, 0.25)",
-    outline: "2px solid rgba(100,200,255,0.9)",
+  answerActive: {
+    outline: "2.5px solid rgba(50, 50, 50, 0.9)",
     outlineOffset: "-2px",
-    borderTop: "3px solid rgba(60,180,255,1)",
-    zIndex: 1,
+    zIndex: 2,
   },
   hiddenInput: {
     position: "absolute",

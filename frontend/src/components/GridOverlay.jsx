@@ -29,6 +29,31 @@ export default function GridOverlay({ gridData, imgSize, answers, activeCell, di
     cellMap[`${cell.row},${cell.col}`] = cell;
   }
 
+  // Compute the set of cells belonging to the current word
+  const wordCells = new Set();
+  if (activeCell) {
+    const { row: ar, col: ac } = activeCell;
+    if (direction === "across") {
+      for (let c = ac; c < cols; c++) {
+        if ((cellMap[`${ar},${c}`]?.type ?? "answer") === "clue") break;
+        wordCells.add(`${ar},${c}`);
+      }
+      for (let c = ac - 1; c >= 0; c--) {
+        if ((cellMap[`${ar},${c}`]?.type ?? "answer") === "clue") break;
+        wordCells.add(`${ar},${c}`);
+      }
+    } else {
+      for (let r = ar; r < rows; r++) {
+        if ((cellMap[`${r},${ac}`]?.type ?? "answer") === "clue") break;
+        wordCells.add(`${r},${ac}`);
+      }
+      for (let r = ar - 1; r >= 0; r--) {
+        if ((cellMap[`${r},${ac}`]?.type ?? "answer") === "clue") break;
+        wordCells.add(`${r},${ac}`);
+      }
+    }
+  }
+
   // Focus management: keep a ref to the active input
   const activeInputRef = useRef(null);
 
@@ -43,15 +68,17 @@ export default function GridOverlay({ gridData, imgSize, answers, activeCell, di
       {Array.from({ length: rows }, (_, r) =>
         Array.from({ length: cols }, (_, c) => {
           const cell = cellMap[`${r},${c}`] || { row: r, col: c, type: "answer" };
+          const key = `${r},${c}`;
           const isActive = activeCell?.row === r && activeCell?.col === c;
-          const answer = answers[`${r},${c}`] || "";
+          const isInWord = wordCells.has(key);
+          const answer = answers[key] || "";
 
           return (
             <PuzzleCell
-              key={`${r},${c}`}
+              key={key}
               cell={cell}
               isActive={isActive}
-              direction={direction}
+              isInWord={isInWord}
               answer={answer}
               inputRef={isActive ? activeInputRef : null}
               onClick={() => {
