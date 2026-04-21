@@ -94,10 +94,12 @@ def analyze_image(img_bytes: bytes) -> dict:
     right  = int(v_active[-1])
 
     # ── Find individual row / column dividers ────────────────────────────────
-    # Extend slightly past the boundary so the outermost lines are included.
+    # Extend slightly past the END boundaries to capture the outer border lines,
+    # but start exactly at top/left (already reliable from the 5% scan) to
+    # avoid picking up noise or page decorations above/left of the grid.
     MARGIN = 10
-    h_sub = h_proj[max(0, top - MARGIN) : min(h, bottom + MARGIN)]
-    v_sub = v_proj[max(0, left - MARGIN) : min(w, right + MARGIN)]
+    h_sub = h_proj[top : min(h, bottom + MARGIN)]
+    v_sub = v_proj[left : min(w, right + MARGIN)]
 
     row_thresh = max(h_sub.max() * 0.08, 255)
     col_thresh = max(v_sub.max() * 0.08, 255)
@@ -105,8 +107,8 @@ def analyze_image(img_bytes: bytes) -> dict:
     row_offsets = find_line_positions(h_sub, row_thresh, min_gap=3)
     col_offsets = find_line_positions(v_sub, col_thresh, min_gap=3)
 
-    row_lines = [max(0, top - MARGIN) + r for r in row_offsets]
-    col_lines = [max(0, left - MARGIN) + c for c in col_offsets]
+    row_lines = [top + r for r in row_offsets]
+    col_lines = [left + c for c in col_offsets]
 
     n_rows = len(row_lines) - 1
     n_cols = len(col_lines) - 1
@@ -130,10 +132,6 @@ def analyze_image(img_bytes: bytes) -> dict:
 
     row_lines = fill_missing_lines(row_lines)
     col_lines = fill_missing_lines(col_lines)
-
-    # Clip any lines that crept in outside the bbox due to the MARGIN extension
-    row_lines = [r for r in row_lines if top - MARGIN <= r <= bottom + MARGIN]
-    col_lines = [c for c in col_lines if left - MARGIN <= c <= right + MARGIN]
 
     n_rows = len(row_lines) - 1
     n_cols = len(col_lines) - 1
