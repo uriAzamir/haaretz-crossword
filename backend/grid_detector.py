@@ -173,5 +173,7 @@ def analyze_image(img_bytes: bytes) -> dict:
             "width": right - left,
             "height": bottom - top,
         },
+        "col_lines": [int(x) for x in col_lines],
+        "row_lines": [int(y) for y in row_lines],
         "cells": cells,
     }

@@ -2,22 +2,32 @@ import { useEffect, useRef } from "react";
 import PuzzleCell from "./PuzzleCell";
 
 export default function GridOverlay({ gridData, imgSize, answers, activeCell, direction, onCellClick, onKey }) {
-  const { rows, cols, bbox, cells } = gridData;
+  const { rows, cols, bbox, cells, col_lines, row_lines } = gridData;
   const { rendered, natural } = imgSize;
 
   // Scale bbox from natural image coords to rendered coords
   const scaleX = rendered.w / natural.w;
   const scaleY = rendered.h / natural.h;
 
+  // Build precise column/row sizes from detected divider lines if available,
+  // otherwise fall back to equal fractions.
+  const gridTemplateColumns = col_lines && col_lines.length === cols + 1
+    ? col_lines.slice(0, -1).map((x, i) => `${(col_lines[i + 1] - x) * scaleX}px`).join(" ")
+    : `repeat(${cols}, 1fr)`;
+
+  const gridTemplateRows = row_lines && row_lines.length === rows + 1
+    ? row_lines.slice(0, -1).map((y, i) => `${(row_lines[i + 1] - y) * scaleY}px`).join(" ")
+    : `repeat(${rows}, 1fr)`;
+
   const overlayStyle = {
     position: "absolute",
-    left:   bbox.x * scaleX,
-    top:    bbox.y * scaleY,
+    left:   col_lines ? col_lines[0] * scaleX : bbox.x * scaleX,
+    top:    row_lines ? row_lines[0] * scaleY : bbox.y * scaleY,
     width:  bbox.width  * scaleX,
     height: bbox.height * scaleY,
     display: "grid",
-    gridTemplateColumns: `repeat(${cols}, 1fr)`,
-    gridTemplateRows:    `repeat(${rows}, 1fr)`,
+    gridTemplateColumns,
+    gridTemplateRows,
     // Use LTR so col 0 maps to the leftmost pixel column in the image.
     // The backend numbers columns left-to-right from the PNG.
     direction: "ltr",
