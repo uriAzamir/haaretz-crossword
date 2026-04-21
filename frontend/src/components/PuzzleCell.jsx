@@ -81,8 +81,8 @@ const styles = {
     zIndex: 1,
   },
   answerActive: {
-    outline: "2.5px solid rgba(50, 50, 50, 0.9)",
-    outlineOffset: "-2px",
+    outline: "1.5px solid rgba(255, 80, 0, 0.95)",
+    outlineOffset: "-1.5px",
     zIndex: 2,
   },
   hiddenInput: {
