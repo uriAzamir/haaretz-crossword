@@ -12,27 +12,12 @@ function gridKey(rows, cols, cells) {
 // "down" = top-to-bottom = row increasing.
 
 function nextAnswerCell(cells, row, col, direction) {
-  const answer = cells.filter((c) => c.type === "answer");
+  // Only advance to the immediately adjacent cell within the same word.
+  // If that cell is a clue or doesn't exist, stay put (return null).
   if (direction === "across") {
-    // Move LEFT (col decreases) within same row
-    const sameRow = answer
-      .filter((c) => c.row === row && c.col < col)
-      .sort((a, b) => b.col - a.col); // highest col first (nearest left)
-    if (sameRow.length) return sameRow[0];
-    // Wrap to next row: start from rightmost answer cell
-    return answer
-      .filter((c) => c.row > row)
-      .sort((a, b) => a.row !== b.row ? a.row - b.row : b.col - a.col)[0] || null;
+    return cells.find((c) => c.type === "answer" && c.row === row && c.col === col - 1) || null;
   } else {
-    // Move DOWN (row increases) within same col
-    const sameCol = answer
-      .filter((c) => c.col === col && c.row > row)
-      .sort((a, b) => a.row - b.row);
-    if (sameCol.length) return sameCol[0];
-    // Wrap to next col: start from topmost answer cell
-    return answer
-      .filter((c) => c.col > col)
-      .sort((a, b) => a.col !== b.col ? a.col - b.col : a.row - b.row)[0] || null;
+    return cells.find((c) => c.type === "answer" && c.col === col && c.row === row + 1) || null;
   }
 }
 
