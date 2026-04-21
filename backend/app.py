@@ -23,9 +23,11 @@ def health():
 
 
 def pdf_to_image_bytes(pdf_bytes, dpi=250):
-    """Render the first page of a PDF to PNG bytes."""
+    """Render the third page (index 2) of a PDF to PNG bytes."""
     doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-    page = doc[0]
+    if len(doc) < 3:
+        raise ValueError(f"PDF has only {len(doc)} page(s); expected at least 3")
+    page = doc[2]
     mat = fitz.Matrix(dpi / 72, dpi / 72)
     pix = page.get_pixmap(matrix=mat, colorspace=fitz.csRGB)
     return pix.tobytes("png")
