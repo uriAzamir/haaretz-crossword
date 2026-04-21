@@ -22,25 +22,12 @@ function nextAnswerCell(cells, row, col, direction) {
 }
 
 function prevAnswerCell(cells, row, col, direction) {
-  const answer = cells.filter((c) => c.type === "answer");
+  // Only go back one step within the same word.
+  // If that cell is a clue or doesn't exist, stay put (return null).
   if (direction === "across") {
-    // Backspace goes RIGHT (col increases) — opposite of advance
-    const sameRow = answer
-      .filter((c) => c.row === row && c.col > col)
-      .sort((a, b) => a.col - b.col);
-    if (sameRow.length) return sameRow[0];
-    return answer
-      .filter((c) => c.row < row)
-      .sort((a, b) => b.row !== a.row ? b.row - a.row : a.col - b.col)[0] || null;
+    return cells.find((c) => c.type === "answer" && c.row === row && c.col === col + 1) || null;
   } else {
-    // Backspace goes UP (row decreases)
-    const sameCol = answer
-      .filter((c) => c.col === col && c.row < row)
-      .sort((a, b) => b.row - a.row);
-    if (sameCol.length) return sameCol[0];
-    return answer
-      .filter((c) => c.col < col)
-      .sort((a, b) => b.col !== a.col ? b.col - a.col : b.row - a.row)[0] || null;
+    return cells.find((c) => c.type === "answer" && c.col === col && c.row === row - 1) || null;
   }
 }
 
