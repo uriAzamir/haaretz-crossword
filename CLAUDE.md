@@ -48,10 +48,14 @@ haaretz-crossword/
 
 1. Threshold grayscale image at 150 to isolate dark grid lines
 2. Morphological open with long h/v kernels to extract full line segments
-3. Project onto axes; use 5% of max to find grid bounding box
-4. Extend 10px past bbox edges; lower threshold to 8% of max; find all divider lines
+3. Project onto axes; use 5% of max to find grid bounding box (`top`, `bottom`, `left`, `right`)
+4. Search from `top`/`left` downward/rightward (+ 10px margin at end only) at 8% threshold; find all divider lines
 5. Gap-fill: if any spacing > 1.5x median, insert interpolated line(s) at expected position
 6. Sample cell interior (inner 60%) in HSV; H 85-120 + S 25-210 + V 130-255 → CLUE
+7. Return `row_lines` and `col_lines` (exact pixel positions of every divider) alongside cells
+
+Note: the search starts exactly at `top`/`left` (not before) to avoid picking up page
+decorations or border artifacts above/left of the grid creating phantom rows/cols.
 
 ## API contract
 
@@ -62,6 +66,8 @@ POST /api/analyze
   {
     "rows": 22, "cols": 16,
     "bbox": { "x": 191, "y": 200, "width": 1834, "height": 2502 },
+    "row_lines": [200, 314, 428, ...],   // absolute y-positions of every horizontal divider
+    "col_lines": [191, 306, 421, ...],   // absolute x-positions of every vertical divider
     "cells": [{ "row": 0, "col": 0, "type": "clue" }, ...],
     "image_base64": "data:image/png;base64,..."  // only present for PDF uploads
   }
@@ -75,27 +81,36 @@ a PDF blob URL). The frontend uses it as the image source directly.
 ## PDF handling
 
 - Backend detects PDF by filename extension or `%PDF` magic bytes
-- PyMuPDF renders page 0 at 250 DPI → PNG bytes → passed to OpenCV pipeline
+- PyMuPDF renders **page 2 (index 2, the 3rd page)** at 250 DPI → PNG bytes → passed to OpenCV pipeline
+- The Haaretz weekly PDF contains multiple games; the crossword is always on page 3
 - Rendered PNG returned as base64 in the response for the frontend to display
 
 ## Solving interface
 
-- **Across mode** (yellow highlight, orange right bar): auto-advances right-to-left (Hebrew RTL)
-- **Down mode** (blue highlight, blue top bar): auto-advances top-to-bottom
-- Tap a cell to activate it; tap the **same cell again** to toggle across ↔ down
-- Backspace: clears current cell; if already empty, moves to previous cell and clears it
+- Tapping a cell activates it and highlights the **entire current word** in gray
+- The active cell itself gets a distinct darker gray outline/frame
+- Tap the **same cell again** to toggle across ↔ down direction
+- Auto-advances to the next cell within the same word only; stops at word boundary
+- Backspace: clears current cell; if already empty, moves back within the same word only
+- Active cell is always scrolled into view automatically
 - Answers saved to localStorage (keyed by grid structure); survive page reload
 
 ## Grid overlay alignment
 
-The backend returns `bbox` in original image pixel coordinates.
-The frontend scales to rendered image size:
+The backend returns `row_lines` and `col_lines` — the exact pixel positions of every
+divider line in the original image. The frontend uses these to build a pixel-precise
+CSS grid instead of equal `1fr` fractions:
 
 ```js
-left   = (bbox.x / natural.w) * rendered.w
-top    = (bbox.y / natural.h) * rendered.h
-width  = (bbox.width  / natural.w) * rendered.w
-height = (bbox.height / natural.h) * rendered.h
+// Overlay positioned at first detected line, sized to span all lines
+left   = col_lines[0] * scaleX
+top    = row_lines[0] * scaleY
+width  = (col_lines[last] - col_lines[0]) * scaleX
+height = (row_lines[last] - row_lines[0]) * scaleY
+
+// Each column/row sized exactly from the detected line spacings
+gridTemplateColumns = "20px 31px 28px ..."   // one value per column
+gridTemplateRows    = "22px 30px 29px ..."   // one value per row
 ```
 
 The CSS grid uses `direction: ltr` to match OpenCV's left-to-right column numbering.
